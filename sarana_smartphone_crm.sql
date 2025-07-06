@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jul 06, 2025 at 03:35 AM
+-- Generation Time: Jul 06, 2025 at 01:09 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.3.16
 
@@ -32,7 +32,7 @@ CREATE TABLE `categories` (
   `name` varchar(100) NOT NULL,
   `description` text,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `categories`
@@ -60,7 +60,7 @@ CREATE TABLE `chats` (
   `sender_type` enum('customer','admin') NOT NULL,
   `status` enum('unread','read') DEFAULT 'unread',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `chats`
@@ -75,7 +75,12 @@ INSERT INTO `chats` (`id`, `user_id`, `message`, `sender_type`, `status`, `creat
 (6, 2, 'Mohon tunggu sebentar, saya cek dulu informasinya.', 'admin', 'read', '2025-07-06 02:04:09'),
 (7, 2, 'Mohon tunggu sebentar, saya cek dulu informasinya.', 'admin', 'read', '2025-07-06 02:31:40'),
 (8, 2, 'halo', 'customer', 'read', '2025-07-06 02:31:58'),
-(9, 2, 'saya', 'customer', 'read', '2025-07-06 02:32:11');
+(9, 2, 'saya', 'customer', 'read', '2025-07-06 02:32:11'),
+(10, 3, 'halo untuk Samsung Galaxy S24 apakah tersedia?', 'customer', 'read', '2025-07-06 07:28:22'),
+(11, 3, 'Mohon tunggu sebentar, saya cek dulu informasinya.', 'admin', 'read', '2025-07-06 07:29:00'),
+(12, 3, 'Ada kok kak stocknya', 'admin', 'read', '2025-07-06 07:29:11'),
+(13, 3, 'baik min sudah saya pesan', 'customer', 'read', '2025-07-06 07:30:56'),
+(14, 3, 'Ada kok kak stocknya', 'admin', 'read', '2025-07-06 07:31:10');
 
 -- --------------------------------------------------------
 
@@ -93,7 +98,7 @@ CREATE TABLE `discounts` (
   `usage_limit` int DEFAULT NULL,
   `used_count` int DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `discounts`
@@ -102,7 +107,7 @@ CREATE TABLE `discounts` (
 INSERT INTO `discounts` (`id`, `product_id`, `percentage`, `start_date`, `end_date`, `status`, `usage_limit`, `used_count`, `created_at`) VALUES
 (1, 1, 10.00, '2025-07-01', '2025-07-31', 'active', NULL, 0, '2025-07-04 02:54:34'),
 (2, 2, 15.00, '2025-07-01', '2025-07-31', 'active', NULL, 0, '2025-07-04 02:54:34'),
-(3, 11, 2.00, '2025-07-05', '2025-07-06', 'active', NULL, 0, '2025-07-05 05:01:10');
+(4, 6, 75.00, '2025-07-01', '2025-07-10', 'active', NULL, 0, '2025-07-01 10:16:02');
 
 -- --------------------------------------------------------
 
@@ -118,14 +123,21 @@ CREATE TABLE `orders` (
   `payment_status` enum('pending','paid','failed') DEFAULT 'pending',
   `tracking_number` varchar(50) DEFAULT NULL,
   `order_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `orders`
 --
 
 INSERT INTO `orders` (`id`, `user_id`, `total_amount`, `status`, `payment_status`, `tracking_number`, `order_date`) VALUES
-(1, 2, 91000000.00, 'delivered', 'pending', NULL, '2025-07-06 03:08:14');
+(1, 2, 91000000.00, 'delivered', 'pending', NULL, '2025-07-06 03:08:14'),
+(2, 3, 10200000.00, 'delivered', 'pending', NULL, '2025-07-06 07:30:38'),
+(3, 3, 13750000.00, 'shipped', 'pending', NULL, '2025-07-08 07:34:49'),
+(4, 3, 2500000.00, 'cancelled', 'pending', NULL, '2025-07-08 07:35:15'),
+(5, 3, 11000000.00, 'confirmed', 'pending', NULL, '2025-07-07 07:37:38'),
+(6, 3, 30600000.00, 'shipped', 'pending', NULL, '2025-07-10 07:41:29'),
+(7, 2, 28200000.00, 'shipped', 'pending', NULL, '2025-07-01 10:16:46'),
+(8, 3, 500000.00, 'pending', 'pending', NULL, '2025-07-06 11:42:00');
 
 --
 -- Triggers `orders`
@@ -154,7 +166,7 @@ CREATE TABLE `order_items` (
   `product_id` int DEFAULT NULL,
   `quantity` int NOT NULL,
   `price` decimal(12,2) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `order_items`
@@ -163,7 +175,18 @@ CREATE TABLE `order_items` (
 INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`) VALUES
 (1, 1, 4, 1, 18000000.00),
 (2, 1, 5, 4, 16000000.00),
-(3, 1, 6, 1, 9000000.00);
+(3, 1, 6, 1, 9000000.00),
+(4, 2, 2, 1, 10200000.00),
+(5, 3, 1, 1, 13500000.00),
+(6, 3, 3, 1, 250000.00),
+(7, 4, 8, 1, 2500000.00),
+(8, 5, 7, 1, 8500000.00),
+(9, 5, 8, 1, 2500000.00),
+(10, 6, 2, 3, 10200000.00),
+(11, 7, 1, 1, 13500000.00),
+(12, 7, 2, 1, 10200000.00),
+(13, 7, 6, 2, 2250000.00),
+(14, 8, 3, 2, 250000.00);
 
 -- --------------------------------------------------------
 
@@ -184,20 +207,20 @@ CREATE TABLE `products` (
   `image` varchar(255) DEFAULT NULL,
   `status` enum('active','inactive') DEFAULT 'active',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `products`
 --
 
 INSERT INTO `products` (`id`, `category_id`, `unit_id`, `name`, `description`, `price`, `stock`, `weight`, `dimensions`, `image`, `status`, `created_at`) VALUES
-(1, 1, 1, 'iPhone 15 Pro', 'iPhone terbaru dengan teknologi A17 Pro', 15000000.00, 10, 0.00, NULL, '1751769415_6869e147a2592.jpg', 'active', '2025-07-04 02:54:33'),
-(2, 1, 1, 'Samsung Galaxy S24', 'Flagship Samsung dengan AI terdepan', 12000000.00, 15, 0.00, NULL, '1751769440_6869e160764e2.jpg', 'active', '2025-07-04 02:54:33'),
-(3, 2, 2, 'Case iPhone 15', 'Case pelindung premium untuk iPhone 15', 250000.00, 50, 0.00, NULL, '1751769468_6869e17c1f3c2.jpg', 'active', '2025-07-04 02:54:33'),
+(1, 1, 1, 'iPhone 15 Pro', 'iPhone terbaru dengan teknologi A17 Pro', 15000000.00, 8, 0.00, NULL, '1751769415_6869e147a2592.jpg', 'active', '2025-07-04 02:54:33'),
+(2, 1, 1, 'Samsung Galaxy S24', 'Flagship Samsung dengan AI terdepan', 12000000.00, 10, 0.00, NULL, '1751769440_6869e160764e2.jpg', 'active', '2025-07-04 02:54:33'),
+(3, 2, 2, 'Case iPhone 15', 'Case pelindung premium untuk iPhone 15', 250000.00, 47, 0.00, NULL, '1751769468_6869e17c1f3c2.jpg', 'active', '2025-07-04 02:54:33'),
 (4, 1, 1, 'iPhone 15 Pro Max', 'iPhone terbaru dengan chip A17 Pro dan kamera 48MP', 18000000.00, 7, 221.00, NULL, '1751769195_6869e06b07b15.jpg', 'active', '2025-07-05 04:08:54'),
 (5, 1, 1, 'Samsung Galaxy S24 Ultra', 'Flagship Samsung dengan S Pen dan kamera 200MP', 16000000.00, 8, 232.00, NULL, '1751769222_6869e08687a66.jpg', 'active', '2025-07-05 04:08:54'),
-(6, 2, 1, 'Google Pixel 8', 'Smartphone Google dengan AI photography terbaik', 9000000.00, 14, 187.00, NULL, '1751769255_6869e0a7f2a11.jpg', 'active', '2025-07-05 04:08:54'),
-(7, 2, 1, 'OnePlus 12', 'Smartphone flagship killer dengan fast charging', 8500000.00, 15, 220.00, NULL, '1751769285_6869e0c52af8c.jpg', 'active', '2025-07-05 04:08:54'),
+(6, 2, 1, 'Google Pixel 8', 'Smartphone Google dengan AI photography terbaik', 9000000.00, 12, 187.00, NULL, '1751769255_6869e0a7f2a11.jpg', 'active', '2025-07-05 04:08:54'),
+(7, 2, 1, 'OnePlus 12', 'Smartphone flagship killer dengan fast charging', 8500000.00, 14, 220.00, NULL, '1751769285_6869e0c52af8c.jpg', 'active', '2025-07-05 04:08:54'),
 (8, 3, 1, 'Xiaomi Redmi Note 13', 'Smartphone budget dengan performa mumpuni', 2500000.00, 25, 188.00, NULL, '1751769389_6869e12dad6fe.png', 'active', '2025-07-05 04:08:54'),
 (11, 1, 1, 'Xiaomi 14 Ultra', 'Smartphone flagship Xiaomi dengan kamera Leica dan Snapdragon 8 Gen 3', 1499000.00, 18, 0.00, NULL, '1751691395_6868b083cae3f.png', 'active', '2025-07-05 04:56:35');
 
@@ -225,7 +248,8 @@ CREATE TABLE `reviews` (
 --
 
 INSERT INTO `reviews` (`id`, `user_id`, `product_id`, `rating`, `comment`, `admin_reply`, `admin_reply_date`, `replied_by`, `status`, `created_at`) VALUES
-(1, 2, 1, 5, 'Produk rekomended', 'terimakasih', '2025-07-06 03:32:43', 1, 'approved', '2025-07-06 03:23:12');
+(1, 2, 1, 5, 'Produk rekomended', 'terimakasih', '2025-07-06 03:32:43', 1, 'approved', '2025-07-06 03:23:12'),
+(2, 3, 2, 5, 'Kualitas Pelayanan terbaik, rekomended produk bagus responsif adminnya, terimakasih semoga awet', NULL, NULL, NULL, 'approved', '2025-07-06 07:33:17');
 
 -- --------------------------------------------------------
 
@@ -239,7 +263,7 @@ CREATE TABLE `settings` (
   `setting_value` text,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `settings`
@@ -265,7 +289,7 @@ CREATE TABLE `stock_in` (
   `date` date DEFAULT NULL,
   `notes` text,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `stock_in`
@@ -288,7 +312,7 @@ CREATE TABLE `units` (
   `id` int NOT NULL,
   `name` varchar(50) NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `units`
@@ -320,7 +344,7 @@ CREATE TABLE `users` (
   `last_login` timestamp NULL DEFAULT NULL,
   `role` enum('admin','customer') DEFAULT 'customer',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `users`
@@ -328,7 +352,8 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `name`, `email`, `password`, `phone`, `address`, `birth_date`, `gender`, `last_login`, `role`, `created_at`) VALUES
 (1, 'Admin', 'admin@sarana.com', '0192023a7bbd73250516f069df18b500', NULL, NULL, NULL, NULL, NULL, 'admin', '2025-07-04 02:54:33'),
-(2, 'Customer Demo', 'customer@demo.com', '62cc2d8b4bf2d8728120d052163a77df', NULL, NULL, NULL, NULL, NULL, 'customer', '2025-07-04 02:54:33');
+(2, 'Customer Demo', 'customer@demo.com', '62cc2d8b4bf2d8728120d052163a77df', '098765432', 'Padang', NULL, NULL, NULL, 'customer', '2025-07-04 02:54:33'),
+(3, 'tika', 'tika@demo.com', '7a9c9826cf4184fa8baa132c0bf57c81', '0822222222', 'padang', NULL, NULL, NULL, 'customer', '2025-07-06 07:27:37');
 
 --
 -- Triggers `users`
@@ -483,25 +508,25 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT for table `chats`
 --
 ALTER TABLE `chats`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `discounts`
 --
 ALTER TABLE `discounts`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -537,7 +562,7 @@ ALTER TABLE `units`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 -- --------------------------------------------------------
 
