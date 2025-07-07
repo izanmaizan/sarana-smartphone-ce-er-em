@@ -6,13 +6,6 @@ requireAdmin();
 
 $conn = getConnection();
 
-// Define months array for Indonesian names
-$months = [
-    1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-    5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-    9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
-];
-
 // Get filter parameters
 $period = isset($_GET['period']) ? $_GET['period'] : 'monthly';
 $year = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
@@ -154,70 +147,32 @@ while ($row = mysqli_fetch_assoc($category_result)) {
     $category_data[] = $row;
 }
 
-// Comparison data based on selected period
-if ($period == 'daily') {
-    // Daily comparison for selected month
-    $comparison_query = "
-        SELECT 
-            DATE_FORMAT(order_date, '%Y-%m-%d') as period,
-            COUNT(*) as orders,
-            SUM(total_amount) as revenue
-        FROM orders 
-        WHERE order_date BETWEEN '$start_date' AND '$end_date'
-        AND status != 'cancelled'
-        GROUP BY DATE_FORMAT(order_date, '%Y-%m-%d')
-        ORDER BY period
-    ";
-    $comparison_title = "Trend Harian - " . (isset($months[$month]) ? $months[$month] : 'Bulan ' . $month) . " " . $year;
-} elseif ($period == 'monthly') {
-    // Monthly comparison for selected year
-    $comparison_query = "
-        SELECT 
-            DATE_FORMAT(order_date, '%Y-%m') as period,
-            COUNT(*) as orders,
-            SUM(total_amount) as revenue
-        FROM orders 
-        WHERE order_date BETWEEN '$start_date' AND '$end_date'
-        AND status != 'cancelled'
-        GROUP BY DATE_FORMAT(order_date, '%Y-%m')
-        ORDER BY period
-    ";
-    $comparison_title = "Trend Bulanan - " . $year;
-} else {
-    // Yearly comparison (last 5 years)
-    $comparison_query = "
-        SELECT 
-            DATE_FORMAT(order_date, '%Y') as period,
-            COUNT(*) as orders,
-            SUM(total_amount) as revenue
-        FROM orders 
-        WHERE order_date BETWEEN '$start_date' AND '$end_date'
-        AND status != 'cancelled'
-        GROUP BY DATE_FORMAT(order_date, '%Y')
-        ORDER BY period
-    ";
-    $comparison_title = "Trend Tahunan (" . ($year-4) . " - " . $year . ")";
+// Monthly comparison (last 6 months)
+$monthly_comparison_query = "
+    SELECT 
+        DATE_FORMAT(order_date, '%Y-%m') as month,
+        COUNT(*) as orders,
+        SUM(total_amount) as revenue
+    FROM orders 
+    WHERE order_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+    AND status != 'cancelled'
+    GROUP BY DATE_FORMAT(order_date, '%Y-%m')
+    ORDER BY month
+";
+$monthly_comparison_result = mysqli_query($conn, $monthly_comparison_query);
+$monthly_data = [];
+while ($row = mysqli_fetch_assoc($monthly_comparison_result)) {
+    $monthly_data[] = $row;
 }
 
-$comparison_result = mysqli_query($conn, $comparison_query);
-$comparison_data = [];
-while ($row = mysqli_fetch_assoc($comparison_result)) {
-    $comparison_data[] = $row;
+// Calculate growth rate
+$prev_month_revenue = 0;
+$current_month_revenue = 0;
+if (count($monthly_data) >= 2) {
+    $current_month_revenue = end($monthly_data)['revenue'];
+    $prev_month_revenue = $monthly_data[count($monthly_data)-2]['revenue'];
 }
-
-// Calculate growth rate based on period
-$prev_period_revenue = 0;
-$current_period_revenue = 0;
-$growth_rate = 0;
-
-if (count($comparison_data) >= 2) {
-    $current_period_revenue = end($comparison_data)['revenue'] ?? 0;
-    $prev_period_revenue = $comparison_data[count($comparison_data)-2]['revenue'] ?? 0;
-    
-    if ($prev_period_revenue > 0) {
-        $growth_rate = (($current_period_revenue - $prev_period_revenue) / $prev_period_revenue) * 100;
-    }
-}
+$growth_rate = $prev_month_revenue > 0 ? (($current_month_revenue - $prev_month_revenue) / $prev_month_revenue) * 100 : 0;
 
 // Stock alerts
 $low_stock_query = "SELECT COUNT(*) as low_stock_count FROM products WHERE stock <= 5 AND status = 'active'";
@@ -455,14 +410,6 @@ $low_stock = mysqli_fetch_assoc($low_stock_result)['low_stock_count'];
         .text-center {
             text-align: center !important;
         }
-
-        .growth-positive {
-            color: #28a745 !important;
-        }
-
-        .growth-negative {
-            color: #dc3545 !important;
-        }
     }
 
     @media screen {
@@ -572,7 +519,14 @@ $low_stock = mysqli_fetch_assoc($low_stock_result)['low_stock_count'];
                                     style="<?= $period == 'yearly' ? 'display:none' : '' ?>">
                                     <label class="form-label">Bulan</label>
                                     <select name="month" class="form-select">
-                                        <?php foreach ($months as $num => $name): ?>
+                                        <?php 
+                                        $months = [
+                                            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                                            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                                            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                                        ];
+                                        foreach ($months as $num => $name): 
+                                        ?>
                                         <option value="<?= $num ?>" <?= $month == $num ? 'selected' : '' ?>>
                                             <?= $name ?>
                                         </option>
@@ -587,21 +541,6 @@ $low_stock = mysqli_fetch_assoc($low_stock_result)['low_stock_count'];
                                 </div>
                             </form>
                         </div>
-                    </div>
-
-                    <!-- Filter Info Display -->
-                    <div class="alert alert-info mb-4" role="alert">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Filter Aktif:</strong>
-                        <?php if ($period == 'daily'): ?>
-                        Laporan Harian untuk <?= isset($months[$month]) ? $months[$month] : 'Bulan ' . $month ?>
-                        <?= $year ?>
-                        <?php elseif ($period == 'monthly'): ?>
-                        Laporan Bulanan untuk Tahun <?= $year ?>
-                        <?php else: ?>
-                        Laporan Tahunan untuk Periode <?= ($year-4) ?> - <?= $year ?>
-                        <?php endif; ?>
-                        (<?= date('d M Y', strtotime($start_date)) ?> - <?= date('d M Y', strtotime($end_date)) ?>)
                     </div>
 
                     <!-- Summary Statistics - Compact Cards -->
@@ -662,15 +601,7 @@ $low_stock = mysqli_fetch_assoc($low_stock_result)['low_stock_count'];
                                 <h6 class="mb-1 <?= $growth_rate >= 0 ? 'growth-positive' : 'growth-negative' ?>">
                                     <?= $growth_rate >= 0 ? '+' : '' ?><?= number_format($growth_rate, 1) ?>%
                                 </h6>
-                                <small class="text-muted">
-                                    <?php if ($period == 'daily'): ?>
-                                    Growth Harian
-                                    <?php elseif ($period == 'monthly'): ?>
-                                    Growth Bulanan
-                                    <?php else: ?>
-                                    Growth Tahunan
-                                    <?php endif; ?>
-                                </small>
+                                <small class="text-muted">Growth Rate</small>
                             </div>
                         </div>
 
@@ -698,7 +629,7 @@ $low_stock = mysqli_fetch_assoc($low_stock_result)['low_stock_count'];
                                     <i class="fas fa-chart-line text-primary"></i>
                                     Tren Penjualan <?= ucfirst($period) ?>
                                     <?php if ($period == 'daily'): ?>
-                                    - <?= isset($months[$month]) ? $months[$month] : 'Bulan ' . $month ?> <?= $year ?>
+                                    - <?= $months[$month] ?> <?= $year ?>
                                     <?php elseif ($period == 'monthly'): ?>
                                     - <?= $year ?>
                                     <?php endif; ?>
@@ -732,14 +663,14 @@ $low_stock = mysqli_fetch_assoc($low_stock_result)['low_stock_count'];
                             </div>
                         </div>
 
-                        <!-- Trend Comparison -->
+                        <!-- Monthly Comparison -->
                         <div class="col-lg-6">
                             <div class="chart-container">
                                 <h6 class="mb-3">
                                     <i class="fas fa-chart-area text-warning"></i>
-                                    <?= $comparison_title ?>
+                                    Perbandingan 6 Bulan Terakhir
                                 </h6>
-                                <canvas id="comparisonChart"></canvas>
+                                <canvas id="monthlyChart"></canvas>
                             </div>
                         </div>
                     </div>
@@ -840,7 +771,7 @@ $low_stock = mysqli_fetch_assoc($low_stock_result)['low_stock_count'];
                             <strong>Periode:
                                 <?php 
                             if ($period == 'daily') {
-                                echo (isset($months[$month]) ? $months[$month] : 'Bulan ' . $month) . ' ' . $year . ' (Laporan Harian)';
+                                echo $months[$month] . ' ' . $year . ' (Laporan Harian)';
                             } elseif ($period == 'monthly') {
                                 echo 'Tahun ' . $year . ' (Laporan Bulanan)';
                             } else {
@@ -852,9 +783,9 @@ $low_stock = mysqli_fetch_assoc($low_stock_result)['low_stock_count'];
                     </div>
 
                     <!-- Executive Summary -->
-                    <div class="summary-box">
+                    <!-- <div class="summary-box">
                         <h5 class="mb-3"><strong>RINGKASAN EKSEKUTIF</strong></h5>
-                        <div class="row mb-3">
+                        <div class="row">
                             <div class="col-md-3">
                                 <strong>Total Pesanan:</strong><br>
                                 <?= number_format($summary['total_orders']) ?> pesanan
@@ -872,24 +803,7 @@ $low_stock = mysqli_fetch_assoc($low_stock_result)['low_stock_count'];
                                 <?= number_format($summary['unique_customers']) ?> pelanggan
                             </div>
                         </div>
-                        <?php if (abs($growth_rate) > 0): ?>
-                        <div class="row">
-                            <div class="col-12">
-                                <strong>Growth Rate
-                                    <?php if ($period == 'daily'): ?>
-                                    (Perbandingan Hari)
-                                    <?php elseif ($period == 'monthly'): ?>
-                                    (Perbandingan Bulan)
-                                    <?php else: ?>
-                                    (Perbandingan Tahun)
-                                    <?php endif; ?>:</strong>
-                                <span class="<?= $growth_rate >= 0 ? 'growth-positive' : 'growth-negative' ?>">
-                                    <?= $growth_rate >= 0 ? '+' : '' ?><?= number_format($growth_rate, 1) ?>%
-                                </span>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                    </div>
+                    </div> -->
 
                     <!-- Sales Trend Table -->
                     <div class="section-title">
@@ -928,7 +842,7 @@ $low_stock = mysqli_fetch_assoc($low_stock_result)['low_stock_count'];
                                             echo date('d F Y', strtotime($data['period']));
                                         } elseif ($period == 'monthly') {
                                             $month_num = explode('-', $data['period'])[1];
-                                            echo (isset($months[intval($month_num)]) ? $months[intval($month_num)] : 'Bulan ' . $month_num) . ' ' . explode('-', $data['period'])[0];
+                                            echo $months[intval($month_num)] . ' ' . explode('-', $data['period'])[0];
                                         } else {
                                             echo 'Tahun ' . $data['period'];
                                         }
@@ -993,49 +907,8 @@ $low_stock = mysqli_fetch_assoc($low_stock_result)['low_stock_count'];
                         </tbody>
                     </table>
 
-                    <!-- Trend Comparison Table -->
-                    <?php if (!empty($comparison_data) && count($comparison_data) > 1): ?>
-                    <div class="section-title">3. <?= strtoupper($comparison_title) ?></div>
-                    <table class="table report-table">
-                        <thead>
-                            <tr>
-                                <th width="15%">No</th>
-                                <th width="35%">Periode</th>
-                                <th width="25%">Jumlah Pesanan</th>
-                                <th width="25%">Total Omzet</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php 
-                            $no = 1;
-                            foreach ($comparison_data as $data): 
-                            ?>
-                            <tr>
-                                <td class="text-center"><?= $no++ ?></td>
-                                <td>
-                                    <?php
-                                    if ($period == 'daily') {
-                                        echo date('d F Y', strtotime($data['period']));
-                                    } elseif ($period == 'monthly') {
-                                        $month_num = explode('-', $data['period'])[1];
-                                        echo (isset($months[intval($month_num)]) ? $months[intval($month_num)] : 'Bulan ' . $month_num) . ' ' . explode('-', $data['period'])[0];
-                                    } else {
-                                        echo 'Tahun ' . $data['period'];
-                                    }
-                                    ?>
-                                </td>
-                                <td class="text-end"><?= number_format($data['orders']) ?></td>
-                                <td class="text-end"><?= formatRupiah($data['revenue']) ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                    <?php endif; ?>
-
                     <!-- Top Products Table -->
-                    <div class="section-title page-break">
-                        <?= !empty($comparison_data) && count($comparison_data) > 1 ? '4' : '3' ?>. PRODUK TERLARIS
-                    </div>
+                    <div class="section-title page-break">3. PRODUK TERLARIS</div>
                     <table class="table report-table">
                         <thead>
                             <tr>
@@ -1080,9 +953,7 @@ $low_stock = mysqli_fetch_assoc($low_stock_result)['low_stock_count'];
                     </table>
 
                     <!-- Top Customers Table -->
-                    <div class="section-title">
-                        <?= !empty($comparison_data) && count($comparison_data) > 1 ? '5' : '4' ?>. PELANGGAN TERBAIK
-                    </div>
+                    <div class="section-title">4. PELANGGAN TERBAIK</div>
                     <table class="table report-table">
                         <thead>
                             <tr>
@@ -1137,16 +1008,6 @@ $low_stock = mysqli_fetch_assoc($low_stock_result)['low_stock_count'];
                                     <li>Data berdasarkan pesanan yang tidak dibatalkan</li>
                                     <li>Periode: <?= date('d M Y', strtotime($start_date)) ?> -
                                         <?= date('d M Y', strtotime($end_date)) ?></li>
-                                    <li>Filter: <?= ucfirst($period) ?>
-                                        <?php if ($period == 'daily'): ?>
-                                        (<?= isset($months[$month]) ? $months[$month] : 'Bulan ' . $month ?>
-                                        <?= $year ?>)
-                                        <?php elseif ($period == 'monthly'): ?>
-                                        (Tahun <?= $year ?>)
-                                        <?php else: ?>
-                                        (<?= ($year-4) ?> - <?= $year ?>)
-                                        <?php endif; ?>
-                                    </li>
                                     <li>Laporan digenerate otomatis dari sistem</li>
                                 </ul>
                             </div>
@@ -1337,32 +1198,23 @@ $low_stock = mysqli_fetch_assoc($low_stock_result)['low_stock_count'];
         }
     });
 
-    // Comparison Chart (Dynamic based on period)
-    const ctx4 = document.getElementById('comparisonChart').getContext('2d');
-    const comparisonData = <?= json_encode($comparison_data) ?>;
-    const currentPeriod = '<?= $period ?>';
+    // Monthly Comparison Chart
+    const ctx4 = document.getElementById('monthlyChart').getContext('2d');
+    const monthlyData = <?= json_encode($monthly_data) ?>;
 
     new Chart(ctx4, {
         type: 'line',
         data: {
-            labels: comparisonData.map(item => {
-                if (currentPeriod === 'daily') {
-                    return new Date(item.period).toLocaleDateString('id-ID', {
-                        day: '2-digit',
-                        month: 'short'
-                    });
-                } else if (currentPeriod === 'monthly') {
-                    const [year, month] = item.period.split('-');
-                    return new Date(year, month - 1).toLocaleDateString('id-ID', {
-                        month: 'short'
-                    });
-                } else {
-                    return item.period;
-                }
+            labels: monthlyData.map(item => {
+                const [year, month] = item.month.split('-');
+                return new Date(year, month - 1).toLocaleDateString('id-ID', {
+                    month: 'short',
+                    year: '2-digit'
+                });
             }),
             datasets: [{
                 label: 'Omzet',
-                data: comparisonData.map(item => item.revenue || 0),
+                data: monthlyData.map(item => item.revenue),
                 borderColor: 'rgba(255, 99, 132, 1)',
                 backgroundColor: 'rgba(255, 99, 132, 0.1)',
                 borderWidth: 2,
